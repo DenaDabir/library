@@ -6,13 +6,10 @@ import enum
 
 class Person :
     
-    def __init__(self , name , national_number):
+    def __init__(self , name , national_number) :
         self.name = name
         self.national_number = national_number
         self.memberships = [] 
-
-    #def __repr__(self):
-        #return (f"person  :{self.name} ,  : {self.national_number} and memberships : {self.memberships}")
 
 class Employee(Person) :
     employee_id_count = 0
