@@ -1,0 +1,168 @@
+from datetime import date, datetime, timedelta
+import enum
+
+
+
+
+class Person :
+    
+    def __init__(self , name , national_number):
+        self.name = name
+        self.national_number = national_number
+        self.memberships = [] 
+
+    #def __repr__(self):
+        #return (f"person  :{self.name} ,  : {self.national_number} and memberships : {self.memberships}")
+
+class Employee(Person) :
+    employee_id_count = 0
+    def __init__(self, name, national_number , role: Role):
+        super().__init__(name, national_number )
+        Employee.employee_id_count += 1                  
+        self.employee_id = Employee.employee_id_count    
+        self.role = role
+
+    #def __repr__(self):
+        #return (f"{super().__repr__()} , employee id : {self.employee_id} and role : {self.role}")
+
+class Role(enum.Enum) :
+    boss = 1
+    ketab_dar = 2
+    mostakhdem = 3
+
+class Membership :
+    
+    def __init__(self , person : Person , employee  : Employee , 
+                 start_time :datetime , finish_time :datetime , type ):
+        self.person = person
+        self.created_by =employee
+        self.start_time =start_time
+        self.finish_time =finish_time
+        self.type =type
+        self.borrows = []
+        
+
+    #def __repr__(self):
+        #return (f"membership with :  person :{self.person} , created_by : {self.created_by} , start time : {self.start_time} , finish time : {self.finish_time} , type : {self.type} and its borrows : {self.borrows} ")
+class Membershiptype(enum.Enum) :
+    spacial = 1
+    normal = 2
+
+class Borrow :
+    def __init__(self , book :Book , membership :Membership, start_time :datetime ,
+                  expected_finish_time  :datetime, actual_finish_time :datetime = None):
+        self.book = book
+        self.membership = membership
+        self.start_time = start_time
+        self.expected_finish_time = expected_finish_time
+        self.actual_finish_time = actual_finish_time
+
+    #def __repr__(self):
+        #return (f"borrow with : book : {self.book} , membership : {self.membership} , borrow start tiem : {self.start_time} , with expected finish time : {self.expected_finish_time} , actual finish time : {self.actual_finish_time}")
+
+class Book :
+    def __init__(self ,name  , page_count , book_id):
+        self.name = name
+        self.page_count = page_count
+        self.borrows = []
+        self.id = book_id
+
+    #def __repr__(self):
+        #return (f"this book with name : {self.name} , page count : {self.page_count} , and borrows : {self.borrows}")
+
+persons = []
+books = []
+memberships = []
+
+# person1 = Person("hamed" , 123 , 456)
+# person2 = Person("dena" , 246 , 824)
+def setup_library():
+    sama = Employee('sama', '1234567890',  Role.ketab_dar)
+    persons.append(sama)
+
+    book1 = Book("shoma" , 200 , 234323342)
+    book2 = Book("anha" , 100 , 232032049)
+    books.append(book1)
+    books.append(book2)
+    create_membership(persons[0], 'dena', '000000001', Membershiptype.normal, 12)
+
+    create_membership(persons[0] , "dada" , "12345677" , Membershiptype.spacial , 12 )
+
+
+
+def has_conflict(start1, finish1, start2, finish2) -> bool:
+    if start2  > finish1 or finish2 < start1 :
+        return False
+    else :
+        return True
+
+def create_membership(creator: Employee, person_name: str , person_national_number: str , membershipType , membershipDurationInMonth: int) :
+    does_person_exists = False
+    for person in persons:
+        if person.national_number == person_national_number :
+            if person.name != person_name :
+                raise Exception("person with this national code already exists but with diffrent name ")
+
+            does_person_exists = True
+            break
+ 
+    start_time = datetime.now()
+    finish_time = start_time + timedelta(30*membershipDurationInMonth)
+
+    #print(does_person_exists)
+    if does_person_exists == False:
+        person = Person(person_name, person_national_number)
+        persons.append(person)
+    #else:
+    for previous_membership in person.memberships:
+        if has_conflict(previous_membership.start_time, previous_membership.finish_time, start_time, finish_time):
+            raise "there is already some membership in this time period"
+
+    membership = Membership(person, creator, start_time, finish_time, membershipType)
+    person.memberships.append(membership)
+
+    memberships.append(membership)
+    return membership
+
+def borrow_book( book , membership , duration_in_days) :
+
+    start_time = datetime.now()
+    finish_time = datetime.now() + timedelta(duration_in_days )
+
+    # 0 : book is available (has no active borrow)
+    for borrow in book.borrows :
+            if borrow.actual_finish_time == None :
+                raise "this book has active borrow"
+
+    # 0-1: membership is active 
+    if membership.finish_time < finish_time :
+        raise "this membership is not active "
+
+    #0-2 : membership has no active borrow
+    for borrowed in membership.borrows :
+        if borrowed.actual_finish_time == None :
+            raise "this membership has not returned book"
+
+    # 1 : create borrow object
+    new_borrow = Borrow(book , membership , start_time ,finish_time)
+    # 3 : add borrow to membership
+    membership.borrows.append(new_borrow)
+    # 2 : add borrow to book
+    book.borrows.append(new_borrow)
+
+
+def return_book(borrow) :
+    if borrow.actual_finish_time != None :
+        raise "this membership has no borrowed book at the moment"
+    
+    borrow.actual_finish_time = datetime.now()
+
+def add_book(book : Book ) :
+    for cbook in books :
+        if cbook.id == book.id :
+            raise "this book is exists in library book's list"
+        
+    books.append(book)
+
+
+setup_library()
